@@ -1,5 +1,5 @@
 #! /bin/bash
-imagename=external-software
+imagename=external-software-nhp-synth
 datestamp=$( date +%Y%m%d )
 tarfile=${imagename}_${datestamp}.tar
 
