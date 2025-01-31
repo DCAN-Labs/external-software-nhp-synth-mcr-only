@@ -1,85 +1,64 @@
-FROM ubuntu:18.04
-
-ARG DEBIAN_FRONTEND=noninteractive
-
-#----------------------------------------------------------
-# Install common dependencies
-#----------------------------------------------------------
-ENV LANG="en_US.UTF-8" \
-    LC_ALL="C.UTF-8" \
-    ND_ENTRYPOINT="/neurodocker/startup.sh"
-RUN apt-get update && apt-get install -yq --no-install-recommends \
-        apt-utils \
-        build-essential \
-        bzip2 \
-        ca-certificates \
-        curl \
-        dirmngr\
-        git \
-        gnupg2 \
-        libglib2.0-0 \
-        libssl1.0.0 \
-        libssl-dev \
-        libxcomposite1 \
-        locales \
-        m4 \
-        make \
-        rsync \
-        unzip \
-        wget
-
-RUN wget -O- http://neuro.debian.net/lists/bionic.us-ca.full | tee /etc/apt/sources.list.d/neurodebian.sources.list
-
-# Looks like the same command on both sides of the '||'. Am guessing that sometimes you have to do this a couple of times before it works?
-RUN apt-key adv --recv-keys --keyserver pgp.mit.edu 0xA5D32F012649A5A9 || apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 0xA5D32F012649A5A9
-RUN apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
-    && localedef --force --inputfile=en_US --charmap=UTF-8 C.UTF-8 \
-    && chmod 777 /opt && chmod a+s /opt \
-    && mkdir -p /neurodocker \
-    && if [ ! -f "$ND_ENTRYPOINT" ]; then \
-        echo '#!/usr/bin/env bash' >> $ND_ENTRYPOINT \
-        && echo 'set +x' >> $ND_ENTRYPOINT \
-        && echo 'if [ -z "$*" ]; then /usr/bin/env bash; else $*; fi' >> $ND_ENTRYPOINT; \
-    fi \
-    && chmod -R 777 /neurodocker && chmod a+s /neurodocker
-
-# install connectome workbench
-RUN mkdir -p /opt
+FROM ubuntu:18.04 as base
+# set non-interactive frontend
+ENV DEBIAN_FRONTEND=noninteractive
+# set working directory to /opt
 WORKDIR /opt
-RUN curl --retry 5 https://www.humanconnectome.org/storage/app/media/workbench/workbench-linux64-v1.5.0.zip --output workbench-linux64-v1.5.0.zip && \
-  unzip workbench-linux64-v1.5.0.zip && \
-  rm workbench-linux64-v1.5.0.zip
+# install dependencies
+RUN apt-get update && apt-get install -y build-essential gpg wget m4 libglu1-mesa libncursesw5-dev libgdbm-dev \
+    gfortran python python-pip libz-dev libreadline-dev libbz2-dev libopenblas-dev liblapack-dev libhdf5-dev \
+    libfftw3-dev git graphviz patchelf libssl-dev libsqlite3-dev uuid-dev git-lfs curl bc dc libgl1-mesa-dev \
+    unzip libgomp1 libxmu6 libxt6 tcsh libffi-dev lzma-dev liblzma-dev tk-dev libdb-dev && \
+    # install cmake
+    wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null \
+    | gpg --dearmor - | tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null && \
+    echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ bionic main' \
+    | tee /etc/apt/sources.list.d/kitware.list >/dev/null && \
+    apt-get update && rm /usr/share/keyrings/kitware-archive-keyring.gpg && \
+    apt-get install -y kitware-archive-keyring cmake && \
+    # install python3.9
+    curl -O https://www.python.org/ftp/python/3.10.16/Python-3.10.16.tgz && tar xvf Python-3.10.16.tgz && \
+    rm Python-3.10.16.tgz && cd Python-3.10.16 && ./configure --enable-optimizations && make altinstall && \
+    cd .. && rm -rf Python-3.10.16
 
+# Install MATLAB Compiler Runtime
+FROM base as mcr
+RUN mkdir /opt/mcr /opt/mcr_download && cd /opt/mcr_download && \
+    wget https://ssd.mathworks.com/supportfiles/downloads/R2019a/Release/9/deployment_files/installer/complete/glnxa64/MATLAB_Runtime_R2019a_Update_9_glnxa64.zip \
+    && unzip MATLAB_Runtime_R2019a_Update_9_glnxa64.zip \
+    && ./install -agreeToLicense yes -mode silent -destinationFolder /opt/mcr \
+    && rm -rf /opt/mcr_download
 
-#-------------------
-# Install ANTs 2.2.0
-#-------------------
-RUN echo "Downloading ANTs ..." \
-    && curl -sSL --retry 5 https://s3.msi.umn.edu/neurodocker-ants-mirror/ANTs-Linux-centos5_x86_64-v2.2.0-0740f91.tar.gz \
-    | tar zx -C /opt
-ENV ANTSPATH=/opt/ants \
-    PATH=/opt/ants:$PATH
+# install fsl
+FROM base as fsl
+#RUN echo "Downloading FSL ..." && \
+#    curl -O https://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py && \
+#    python2 fslinstaller.py -d /opt/fsl && rm fslinstaller.py
+RUN echo "Downloading FSL ..." && \
+    curl -O https://s3.msi.umn.edu/tmadison-public/fslinstaller.py && \
+    python2 fslinstaller.py --manifest https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/releases/manifest-6.0.7.9.json -d /opt/fsl &&  rm fslinstaller.py
 
-#------------------------
-# Install Convert3D 1.0.0
-#------------------------
-RUN echo "Downloading C3D ..." \
-    && mkdir /opt/c3d \
-    && curl -sSL --retry 5 https://sourceforge.net/projects/c3d/files/c3d/1.0.0/c3d-1.0.0-Linux-x86_64.tar.gz/download \
-    | tar -xzC /opt/c3d --strip-components=1
-ENV C3DPATH=/opt/c3d/bin \
-    PATH=/opt/c3d/bin:$PATH
+# install ants
+FROM base as ants
+RUN echo "Downloading ANTs ..." && \ 
+    mkdir -p /opt/ANTs && cd /opt/ANTs && \
+    curl -O https://raw.githubusercontent.com/cookpa/antsInstallExample/master/installANTs.sh && \
+    chmod +x /opt/ANTs/installANTs.sh && /opt/ANTs/installANTs.sh && rm installANTs.sh && \
+    rm -rf /opt/ANTs/ANTs && rm -rf /opt/ANTs/build && rm -rf /opt/ANTs/install/lib && \
+    mv /opt/ANTs/install/bin /opt/ANTs/bin && rm -rf /opt/ANTs/install
 
-#--------------------------
+# install freesurfer
+FROM base as freesurfer
+# Make libnetcdf
+RUN echo "Downloading libnetcdf ..." && \
+    curl -sSL --retry 5 https://github.com/Unidata/netcdf-c/archive/v4.6.1.tar.gz | tar zx -C /opt && \
+    cd /opt/netcdf-c-4.6.1/ && \
+    LDFLAGS=-L/usr/local/lib && CPPFLAGS=-I/usr/local/include && ./configure --disable-netcdf-4 --disable-dap \
+    --enable-shared --prefix=/usr/local && \
+    make && make install && \
+    rm -rf /opt/netcdf-c-4.6.1/ && ldconfig
 # Install FreeSurfer v5.3.0-HCP
-#--------------------------
-RUN apt-get update -qq && apt-get install -yq --no-install-recommends bc libgomp1 libxmu6 libxt6 tcsh \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-RUN echo "Downloading FreeSurfer ..." \
-    && curl -sSL --retry 5 https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/5.3.0-HCP/freesurfer-Linux-centos6_x86_64-stable-pub-v5.3.0-HCP.tar.gz \
+RUN echo "Downloading FreeSurfer ..." && \
+    curl -sSL --retry 5 https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/5.3.0-HCP/freesurfer-Linux-centos6_x86_64-stable-pub-v5.3.0-HCP.tar.gz \
     | tar xz -C /opt \
     --exclude='freesurfer/average/mult-comp-cor' \
     --exclude='freesurfer/lib/cuda' \
@@ -93,110 +72,14 @@ RUN echo "Downloading FreeSurfer ..." \
     --exclude='freesurfer/subjects/fsaverage5' \
     --exclude='freesurfer/subjects/fsaverage6' \
     --exclude='freesurfer/subjects/fsaverage_sym' \
-    --exclude='freesurfer/trctrain' \
-    && sed -i '$isource $FREESURFER_HOME/SetUpFreeSurfer.sh' $ND_ENTRYPOINT
+    --exclude='freesurfer/trctrain'
 
-ENV FREESURFER_HOME=/opt/freesurfer
-
-# FreeSurfer uses matlab and tries to write the startup.m to the HOME dir.
-# Therefore, HOME needs to be a writable dir.
-ENV HOME=/opt
-
-#-----------------------------------------------------------
-# Install FSL v5.0.10
-# FSL is non-free. If you are considering commerical use
-# of this Docker image, please consult the relevant license:
-# https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/Licence
-#-----------------------------------------------------------
-RUN apt-get update -qq && apt-get install -yq --no-install-recommends bc dc libfontconfig1 libfreetype6 libgl1-mesa-dev libglu1-mesa-dev libgomp1 libice6 libxcursor1 libxft2 libxinerama1 libxrandr2 libxrender1 libxt6 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-RUN echo "Downloading FSL ..." \
-    && curl -sSL --retry 5 https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-5.0.10-centos6_64.tar.gz \
-    | tar zx -C /opt \
-    && sed -i '$iecho Some packages in this Docker container are non-free' $ND_ENTRYPOINT \
-    && sed -i '$iecho If you are considering commercial use of this container, please consult the relevant license:' $ND_ENTRYPOINT \
-    && sed -i '$iecho https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/Licence' $ND_ENTRYPOINT \
-    && sed -i '$isource $FSLDIR/etc/fslconf/fsl.sh' $ND_ENTRYPOINT
-
-ENV FSLDIR=/opt/fsl \
-    FSL_DIR=/opt/fsl \
-    PATH=/opt/fsl/bin:$PATH
-
-
-#---------------------
-# Install MATLAB Compiler Runtime
-#---------------------
-RUN mkdir /opt/mcr /opt/mcr_download
-WORKDIR /opt/mcr_download
-RUN wget https://ssd.mathworks.com/supportfiles/downloads/R2019a/Release/9/deployment_files/installer/complete/glnxa64/MATLAB_Runtime_R2019a_Update_9_glnxa64.zip \
-    && unzip MATLAB_Runtime_R2019a_Update_9_glnxa64.zip \
-    && ./install -agreeToLicense yes -mode silent -destinationFolder /opt/mcr \
-    && rm -rf /opt/mcr_download
-
-#---------------------
-# Install MSM Binaries
-#---------------------
-RUN mkdir /opt/msm
-RUN curl -ksSL --retry 5 https://www.doc.ic.ac.uk/~ecr05/MSM_HOCR_v2/MSM_HOCR_v2-download.tgz | tar zx -C /opt
-RUN mv /opt/homes/ecr05/MSM_HOCR_v2/* /opt/msm/
-RUN rm -rf /opt/homes /opt/msm/MacOSX /opt/msm/Centos
-ENV MSMBINDIR=/opt/msm/Ubuntu
-
-#----------------------------
-# Make perl version 5.20.3
-#----------------------------
-RUN curl -sSL --retry 5 http://www.cpan.org/src/5.0/perl-5.20.3.tar.gz | tar zx -C /opt
-WORKDIR /opt/perl-5.20.3
-RUN ./Configure -des -Dprefix=/usr/local
-RUN make && make install
-RUN rm -f /usr/bin/perl && ln -s /usr/local/bin/perl /usr/bin/perl
-WORKDIR /
-RUN rm -rf /opt/perl-5.20.3/
-
-#------------------
-# Make libnetcdf
-#------------------
-RUN curl -sSL --retry 5 https://github.com/Unidata/netcdf-c/archive/v4.6.1.tar.gz | tar zx -C /opt
-WORKDIR /opt/netcdf-c-4.6.1/
-RUN LDFLAGS=-L/usr/local/lib && CPPFLAGS=-I/usr/local/include && ./configure --disable-netcdf-4 --disable-dap --enable-shared --prefix=/usr/local
-RUN make && make install
-WORKDIR /usr/local/lib
-RUN ln -s libnetcdf.so.13.1.1 libnetcdf.so.6
-RUN rm -rf /opt/netcdf-c-4.6.1/
-ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-
-#------------------------------------------
-# Set Connectome Workbench Binary Directory
-#------------------------------------------
-RUN ln -s /opt/workbench/bin_linux64/wb_command /opt/workbench/wb_command
-RUN mkdir /root/.config /.config
-COPY ["brainvis.wustl.edu", "/opt/workbench/brainvis.wustl.edu"]
-COPY ["brainvis.wustl.edu", "/root/.config/brainvis.wustl.edu"]
-COPY ["brainvis.wustl.edu", "/.config/brainvis.wustl.edu"]
-RUN chmod -R 775 /root/.config /.config
-ENV WORKBENCHDIR=/opt/workbench \
-    CARET7DIR=/opt/workbench/bin_linux64 \
-    CARET7CONFDIR=/opt/workbench/brainvis.wustl.edu
-
-# Fix libz error
-RUN ln -s -f /lib/x86_64-linux-gnu/libz.so.1.2.11 /opt/workbench/libs_linux64/libz.so.1
-
-# Fix libstdc++6 error
-RUN ln -sf /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25 /opt/mcr/v96/sys/os/glnxa64/libstdc++.so.6
-
-# # Fix MCR lib errors
-# WORKDIR /opt/mcr/v92/bin/glnxa64
-# RUN ln -s libicudata.so.56.1  libicudata.so.56
-# RUN ln -s libicuuc.so.56.1    libicuuc.so.56
-# RUN ln -s libicui18n.so.56.1  libicui18n.so.56
-# RUN ln -s libicuio.so.56.1    libicuio.so.56
-# RUN ln -s libhdf5_hl.so.8.0.1 libhdf5_hl.so.8
-# RUN ln -s libhdf5.so.8.0.1    libhdf5.so.8
-# RUN ln -s libCGAL.so.11.0.2   libCGAL.so.11
-# RUN ln -s libgmp.so.3.4.1     libgmp.so.3
-# RUN ln -s libmpfr.so.1.2.2    libmpfr.so.1
+RUN mkdir -p /opt/ANTs
+COPY --from=ants /opt/ANTs/bin /opt/ANTs/bin
+COPY --from=fsl /opt/fsl /opt/fsl
+COPY --from=freesurfer /usr/local/lib/libnetcdf* /usr/local/lib/
+COPY --from=freesurfer /opt/freesurfer /opt/freesurfer
+COPY --from=mcr /opt/mcr /opt/mcr
 
 # make this run with Singularity, too.
 RUN ldconfig
