@@ -74,6 +74,7 @@ RUN echo "Downloading FreeSurfer ..." && \
     --exclude='freesurfer/subjects/fsaverage_sym' \
     --exclude='freesurfer/trctrain'
 
+from base as final
 RUN mkdir -p /opt/ANTs
 COPY --from=ants /opt/ANTs/bin /opt/ANTs/bin
 COPY --from=fsl /opt/fsl /opt/fsl
