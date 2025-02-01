@@ -38,17 +38,17 @@ RUN echo "Downloading FSL ..." && \
     python2 fslinstaller.py --manifest https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/releases/manifest-6.0.7.9.json -d /opt/fsl &&  rm fslinstaller.py
 
 # install ants
-FROM base as ants
-RUN echo "Downloading ANTs ..." && \ 
-    mkdir -p /opt/ANTs && cd /opt/ANTs && \
-    curl -O https://raw.githubusercontent.com/cookpa/antsInstallExample/master/installANTs.sh && \
-    chmod +x /opt/ANTs/installANTs.sh && /opt/ANTs/installANTs.sh && rm installANTs.sh && \
-    rm -rf /opt/ANTs/ANTs && rm -rf /opt/ANTs/build && rm -rf /opt/ANTs/install/lib && \
-    mv /opt/ANTs/install/bin /opt/ANTs/bin && rm -rf /opt/ANTs/install
+#FROM base as ants
+#RUN echo "Downloading ANTs ..." && \ 
+#    mkdir -p /opt/ANTs && cd /opt/ANTs && \
+#    curl -O https://raw.githubusercontent.com/cookpa/antsInstallExample/master/installANTs.sh && \
+#    chmod +x /opt/ANTs/installANTs.sh && /opt/ANTs/installANTs.sh && rm installANTs.sh && \
+#    rm -rf /opt/ANTs/ANTs && rm -rf /opt/ANTs/build && rm -rf /opt/ANTs/install/lib && \
+#    mv /opt/ANTs/install/bin /opt/ANTs/bin && rm -rf /opt/ANTs/install
 
 FROM base as final
-RUN mkdir -p /opt/ANTs
-COPY --from=ants /opt/ANTs/bin /opt/ANTs/bin
+#RUN mkdir -p /opt/ANTs
+#COPY --from=ants /opt/ANTs/bin /opt/ANTs/bin
 COPY --from=fsl /opt/fsl /opt/fsl
 # COPY --from=mcr /opt/mcr /opt/mcr
 
