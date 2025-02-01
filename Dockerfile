@@ -42,7 +42,7 @@ FROM base as ants
 RUN echo "Downloading ANTs ..." && \ 
     mkdir -p /opt/ANTs && cd /opt/ANTs && \
     curl -O https://s3.msi.umn.edu/tmadison-public/installANTs.sh && \
-    chmod +x /opt/ANTs/installANTs.sh && /opt/ANTs/installANTs.sh 1 && rm installANTs.sh && \
+    chmod +x /opt/ANTs/installANTs.sh && /opt/ANTs/installANTs.sh && rm installANTs.sh && \
     rm -rf /opt/ANTs/ANTs && rm -rf /opt/ANTs/build && rm -rf /opt/ANTs/install/lib && \
     mv /opt/ANTs/install/bin /opt/ANTs/bin && rm -rf /opt/ANTs/install
 
