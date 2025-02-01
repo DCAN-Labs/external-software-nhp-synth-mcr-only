@@ -29,13 +29,13 @@ RUN apt-get update && apt-get install -y build-essential gpg wget m4 libglu1-mes
 #    && rm -rf /opt/mcr_download
 
 # install fsl
-FROM base as fsl
+#FROM base as fsl
 #RUN echo "Downloading FSL ..." && \
 #    curl -O https://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py && \
 #    python2 fslinstaller.py -d /opt/fsl && rm fslinstaller.py
-RUN echo "Downloading FSL ..." && \
-    curl -O https://s3.msi.umn.edu/tmadison-public/fslinstaller.py && \
-    python2 fslinstaller.py --manifest https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/releases/manifest-6.0.7.9.json -d /opt/fsl &&  rm fslinstaller.py
+#RUN echo "Downloading FSL ..." && \
+#    curl -O https://s3.msi.umn.edu/tmadison-public/fslinstaller.py && \
+#    python2 fslinstaller.py --manifest https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/releases/manifest-6.0.7.9.json -d /opt/fsl &&  rm fslinstaller.py
 
 # install ants
 FROM base as ants
@@ -49,7 +49,7 @@ RUN echo "Downloading ANTs ..." && \
 FROM base as final
 RUN mkdir -p /opt/ANTs
 COPY --from=ants /opt/ANTs/bin /opt/ANTs/bin
-COPY --from=fsl /opt/fsl /opt/fsl
+# COPY --from=fsl /opt/fsl /opt/fsl
 # COPY --from=mcr /opt/mcr /opt/mcr
 
 # make this run with Singularity, too.
