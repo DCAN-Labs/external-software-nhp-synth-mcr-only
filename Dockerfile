@@ -51,9 +51,9 @@ FROM base as final
 #COPY --from=ants /opt/ANTs/bin /opt/ANTs/bin
 COPY --from=fsl \
     --exclude=/opt/fsl/bin/*eddy* \
-    --exclude=/opt/fsl/bin/*gpu* \ 
+    --exclude=/opt/fsl/bin/*gpu* \
     --exclude=/opt/fsl/bin/*fibre* \
-    --exclude=/opt/fsl/bin/*eddy* 
+    --exclude=/opt/fsl/bin/*eddy* \
     --exclude=/opt/fsl/bin/*fabber* \
     --exclude=/opt/fsl/bin/*probtrack* \
     --exclude=/opt/fsl/bin/*flameo* \
