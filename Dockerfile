@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.7-labs
 FROM ubuntu:18.04 as base
 # set non-interactive frontend
 ENV DEBIAN_FRONTEND=noninteractive
