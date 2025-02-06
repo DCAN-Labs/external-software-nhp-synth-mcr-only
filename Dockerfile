@@ -49,7 +49,19 @@ RUN echo "Downloading FSL ..." && \
 FROM base as final
 #RUN mkdir -p /opt/ANTs
 #COPY --from=ants /opt/ANTs/bin /opt/ANTs/bin
-COPY --from=fsl /opt/fsl /opt/fsl
+COPY --from=fsl \
+    --exclude=/opt/fsl/bin/*eddy* \
+    --exclude=/opt/fsl/bin/*gpu* \ 
+    --exclude=/opt/fsl/bin/*fibre* \
+    --exclude=/opt/fsl/bin/*eddy* 
+    --exclude=/opt/fsl/bin/*fabber* \
+    --exclude=/opt/fsl/bin/*probtrack* \
+    --exclude=/opt/fsl/bin/*flameo* \
+    --exclude=/opt/fsl/bin/*surf* \
+    --exclude=/opt/fsl/bin/*dti* \
+    --exclude=/opt/fsl/bin/*feat* \
+    --exclude=/opt/fsl/bin/*mist* \
+    /opt/fsl /opt/fsl
 # COPY --from=mcr /opt/mcr /opt/mcr
 
 # make this run with Singularity, too.
