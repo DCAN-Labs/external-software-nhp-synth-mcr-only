@@ -54,7 +54,6 @@ COPY --from=fsl \
     --exclude=/opt/fsl/bin/*eddy* \
     --exclude=/opt/fsl/bin/*gpu* \
     --exclude=/opt/fsl/bin/*fibre* \
-    --exclude=/opt/fsl/bin/*eddy* \
     --exclude=/opt/fsl/bin/*fabber* \
     --exclude=/opt/fsl/bin/*probtrack* \
     --exclude=/opt/fsl/bin/*flameo* \
@@ -62,6 +61,7 @@ COPY --from=fsl \
     --exclude=/opt/fsl/bin/*dti* \
     --exclude=/opt/fsl/bin/*feat* \
     --exclude=/opt/fsl/bin/*mist* \
+    --exclude=/opt/fsl/data/first* \
     /opt/fsl /opt/fsl
 # COPY --from=mcr /opt/mcr /opt/mcr
 
