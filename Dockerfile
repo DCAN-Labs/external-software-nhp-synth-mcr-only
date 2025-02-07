@@ -53,7 +53,8 @@ FROM base as final
 COPY --from=fsl /opt/fsl /opt/fsl
 # COPY --from=mcr /opt/mcr /opt/mcr
 WORKDIR /opt/fsl/bin
-RUN rm *eddy* *gpu* *fibre* *fabber* *probtrack* *flameo* *dti* *feat* *mist*
+RUN rm *gpu* 
+RUN rm *eddy* *fibre* *fabber* *probtrack* *flameo* *dti* *feat* *mist*
 WORKDIR /opt/fsl/data
 RUN rm -rf first*
 
