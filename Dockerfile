@@ -49,7 +49,6 @@ RUN echo "Downloading FSL ..." && \
     rm -rf /opt/fsl/data/first* && \
     rm -rf /opt/fsl/pkgs/fsl*eddy* && \
     rm -rf /opt/fsl/pkgs/fsl*fabber* && \
-    rm -rf /opt/fsl/pkgs/*probtrack* && \
     rm -rf /opt/fsl/pkgs/fsl*first_models* && \
     rm -rf /opt/fsl/pkgs/fsl*omm* && \
     rm -rf /opt/fsl/pkgs/fsl*mist* && \
