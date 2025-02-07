@@ -47,6 +47,14 @@ RUN echo "Downloading FSL ..." && \
     rm /opt/fsl/bin/*mist* && \
     rm /opt/fsl/bin/*gpu* && \
     rm -rf /opt/fsl/data/first* && \
+    rm -rf /opt/fsl/pkgs/fsl*eddy* && \
+    rm -rf /opt/fsl/pkgs/fsl*fabber* && \
+    rm -rf /opt/fsl/pkgs/*probtrack* && \
+    rm -rf /opt/fsl/pkgs/fsl*first_models* && \
+    rm -rf /opt/fsl/pkgs/fsl*omm* && \
+    rm -rf /opt/fsl/pkgs/fsl*mist* && \
+    rm -rf /opt/fsl/pkgs/fsl*cuda* && \
+    rm -rf /opt/fsl/pkgs/fsleyes* && \
     rm fslinstaller.py
 
 # install ants
