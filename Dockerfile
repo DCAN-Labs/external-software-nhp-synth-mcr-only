@@ -50,20 +50,12 @@ RUN echo "Downloading FSL ..." && \
 FROM base as final
 #RUN mkdir -p /opt/ANTs
 #COPY --from=ants /opt/ANTs/bin /opt/ANTs/bin
-COPY --from=fsl \
-    --exclude=bin/*eddy* \
-    --exclude=bin/*gpu* \
-    --exclude=bin/*fibre* \
-    --exclude=bin/*fabber* \
-    --exclude=bin/*probtrack* \
-    --exclude=bin/*flameo* \
-    --exclude=bin/*surf* \
-    --exclude=bin/*dti* \
-    --exclude=bin/*feat* \
-    --exclude=bin/*mist* \
-    --exclude=data/first* \
-    /opt/fsl /opt/fsl
+COPY --from=fsl /opt/fsl /opt/fsl
 # COPY --from=mcr /opt/mcr /opt/mcr
+WORKDIR /opt/fsl/bin
+RUN rm *eddy* *gpu* *fibre* *fabber* *probtrack* *flameo* *dti* *feat* *mist*
+WORKDIR /opt/fsl/data
+RUN rm -rf first*
 
 # make this run with Singularity, too.
 RUN ldconfig
