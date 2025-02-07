@@ -36,7 +36,18 @@ FROM base as fsl
 #    python2 fslinstaller.py -d /opt/fsl && rm fslinstaller.py
 RUN echo "Downloading FSL ..." && \
     curl -O https://s3.msi.umn.edu/tmadison-public/fslinstaller.py && \
-    python2 fslinstaller.py --manifest https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/releases/manifest-6.0.7.9.json -d /opt/fsl &&  rm fslinstaller.py
+    python2 fslinstaller.py --manifest https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/releases/manifest-6.0.7.9.json -d /opt/fsl && \
+    rm /opt/fsl/bin/*eddy* && \
+    rm /opt/fsl/bin/*fibre* && \
+    rm /opt/fsl/bin/*fabber* && \
+    rm /opt/fsl/bin/*probtrack* && \
+    rm /opt/fsl/bin/*flameo* && \
+    rm /opt/fsl/bin/*dti* && \
+    rm /opt/fsl/bin/*feat* && \
+    rm /opt/fsl/bin/*mist* && \
+    rm /opt/fsl/bin/*gpu* && \
+    rm -rf /opt/fsl/data/first* && \
+    rm fslinstaller.py
 
 # install ants
 #FROM base as ants
@@ -52,11 +63,6 @@ FROM base as final
 #COPY --from=ants /opt/ANTs/bin /opt/ANTs/bin
 COPY --from=fsl /opt/fsl /opt/fsl
 # COPY --from=mcr /opt/mcr /opt/mcr
-WORKDIR /opt/fsl/bin
-RUN rm *gpu* 
-RUN rm *eddy* *fibre* *fabber* *probtrack* *flameo* *dti* *feat* *mist*
-WORKDIR /opt/fsl/data
-RUN rm -rf first*
 
 # make this run with Singularity, too.
 RUN ldconfig
