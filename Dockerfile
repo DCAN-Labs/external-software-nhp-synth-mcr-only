@@ -20,23 +20,6 @@ RUN apt-get update && apt-get install -y build-essential gpg wget m4 libglu1-mes
     rm Python-3.10.16.tgz && cd Python-3.10.16 && ./configure --enable-optimizations && make altinstall && \
     cd .. && rm -rf Python-3.10.16
 
-# Install MATLAB Compiler Runtime
-# FROM base as mcr
-# RUN mkdir /opt/mcr /opt/mcr_download && cd /opt/mcr_download && \
-#     wget https://ssd.mathworks.com/supportfiles/downloads/R2019a/Release/9/deployment_files/installer/complete/glnxa64/MATLAB_Runtime_R2019a_Update_9_glnxa64.zip \
-#     && unzip MATLAB_Runtime_R2019a_Update_9_glnxa64.zip \
-#     && ./install -agreeToLicense yes -mode silent -destinationFolder /opt/mcr \
-#    && rm -rf /opt/mcr_download
-
-# install fsl
-#FROM base as fsl
-#RUN echo "Downloading FSL ..." && \
-#    curl -O https://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py && \
-#    python2 fslinstaller.py -d /opt/fsl && rm fslinstaller.py
-#RUN echo "Downloading FSL ..." && \
-#    curl -O https://s3.msi.umn.edu/tmadison-public/fslinstaller.py && \
-#    python2 fslinstaller.py --manifest https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/releases/manifest-6.0.7.9.json -d /opt/fsl &&  rm fslinstaller.py
-
 # install ants
 FROM base as ants
 RUN echo "Downloading ANTs ..." && \ 
@@ -49,8 +32,6 @@ RUN echo "Downloading ANTs ..." && \
 FROM base as final
 RUN mkdir -p /opt/ANTs
 COPY --from=ants /opt/ANTs/bin /opt/ANTs/bin
-# COPY --from=fsl /opt/fsl /opt/fsl
-# COPY --from=mcr /opt/mcr /opt/mcr
 
 # make this run with Singularity, too.
 RUN ldconfig
